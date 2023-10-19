@@ -39,6 +39,7 @@ import Check_Gsheet_UID
 import Read_MFRC522
 import Get_Buttons
 import Pi_to_OLED
+#import Doorbot
 
 #https://console.firebase.google.com/u/0/project/noisebridge-rfid-olympus/
 #https://www.freecodecamp.org/news/how-to-get-started-with-firebase-using-python/
@@ -53,8 +54,9 @@ logger.debug("finished imports")
 
 # Add an authorized UID to the database
 
-level_3 = "Gods"
-level_2 = "Members"
+level_99 = "Gods"
+level_3 = "Members"
+level_2 = "Associates"
 level_1 = "Guests"
 
 #ref.child('Mytikas').child(level_3).set({"uid":"08174ab9"})
@@ -145,9 +147,9 @@ def add_uid(mentor_UID, new_UID, mentor_clearance_level, prodigy_clearance_level
     current_unix_timestamp = datetime.timestamp(current_time)*1000
 
 
-    if (mentor_clearance_level == level_2) or (mentor_clearance_level == level_3):
-        if (prodigy_clearance_level == level_2) or (mentor_clearance_level == level_3):
-            # member
+    if (mentor_clearance_level == level_2) or (mentor_clearance_level == level_3) or (mentor_clearance_level == level_99):
+        if (prodigy_clearance_level == level_3) and (mentor_clearance_level == level_3) or (mentor_clearance_level == level_99):
+            # member - unlimited
             new_tag_data = {
                 'clearance': prodigy_clearance_level,  # Replace with your actual tag ID
                 'expire_date': 0,
@@ -158,8 +160,20 @@ def add_uid(mentor_UID, new_UID, mentor_clearance_level, prodigy_clearance_level
                 'user_handle':"",
                 'mentor': mentor_UID
             }
-        elif prodigy_clearance_level == level_1:
-            # 30 day
+        elif (prodigy_clearance_level == level_2) and (mentor_clearance_level == level_3) or (mentor_clearance_level == level_99):
+            # associate - daily time limit (not created yet)
+            new_tag_data = {
+                'clearance': prodigy_clearance_level,  # Replace with your actual tag ID
+                'expire_date': 0,
+                'issue_date': current_unix_timestamp,
+                'exp': "NA",
+                'iss': str(current_time),
+                'UID':new_UID,
+                'user_handle':"",
+                'mentor': mentor_UID
+            }
+        elif (prodigy_clearance_level == level_1) and (mentor_clearance_level == level_2) or(mentor_clearance_level == level_3) or (mentor_clearance_level == level_99):
+            # guest - 30 day exp / daily time limit
             expiration_time = current_time + timedelta(days=30)
             expiration_unix_timestamp = datetime.timestamp(expiration_time)*1000
             new_tag_data = {
@@ -184,8 +198,8 @@ def add_uid(mentor_UID, new_UID, mentor_clearance_level, prodigy_clearance_level
         logger.info(f"Added User {new_UID} to {prodigy_clearance_level}")
         return user_dict
     else:
-        print("Only big M Members can do this action")
-        logger.info("Only big M Members can do this action")
+        print("Only associate or big M Members can do this action")
+        logger.info("Only associate big M Members can do this action")
 
 @debug
 def send_log(log):
@@ -201,6 +215,8 @@ def read_user_action(switch, button):
     #TODO investigate the use of https://docs.python.org/3/library/signal.html
 
     if switch and button:
+        return level_3
+    elif switch:
         return level_2
     else:
         return level_1       
@@ -242,6 +258,8 @@ def main():
         switch, button = Get_Buttons.read()
         
         clearence = look_up_clearance_level(card_uid, user_dict)
+
+        #Doorbot.check_door_status()
         
         is_valid = uid_is_valid(card_uid, user_dict)
         logger.debug(f"{card_uid=} {is_valid=} {switch=}")
@@ -267,13 +285,13 @@ def main():
             strike_the_door()
             send_log(("Opened door to "+card_uid+" at "+str(datetime.now())))
         
-        elif card_uid and is_valid and (switch == True) and ((clearence == level_2) or (clearence == level_3)):
+        elif card_uid and is_valid and (switch == True) and ((clearence == level_2) or (clearence == level_3) or (clearence == level_99)):
             #TODO provide some feedback that we are going into a special mode here to add users
             
             Pi_to_OLED.New_Message("SUDO engaged")
             Pi_to_OLED.OLED_off(100)
             time.sleep(1)
-            Pi_to_OLED.New_Message("If adding a big M, hold red button")
+            Pi_to_OLED.New_Message("If adding a big M, hold red button. If adding an associate do nothing. For 30 day access flip down switch.")
             time.sleep(5)
             switch, button = Get_Buttons.read()
             prodigy_level = read_user_action(switch,button)
