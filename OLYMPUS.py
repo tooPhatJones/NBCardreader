@@ -229,9 +229,11 @@ def generate_QR(new_UID):
 
 @debug
 def main():
-    logger.info("Done caching")
+    logger.debug("Done caching")
     user_dict = load_json()
 
+    Pi_to_OLED.New_Message("Ready")
+    Pi_to_OLED.OLED_off(3)
     
     while True:
         time.sleep(.1)
