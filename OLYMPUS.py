@@ -161,7 +161,7 @@ def add_uid(mentor_UID, new_UID, mentor_clearance_level, prodigy_clearance_level
                 'mentor': mentor_UID
             }
         elif (prodigy_clearance_level == level_2) and (mentor_clearance_level == level_3) or (mentor_clearance_level == level_99):
-            # associate - daily time limit (not created yet)
+            # associate - can only add guests, no expiration
             new_tag_data = {
                 'clearance': prodigy_clearance_level,  # Replace with your actual tag ID
                 'expire_date': 0,
