@@ -253,8 +253,8 @@ def main():
         time.sleep(.1)
 
         card_uid = Read_MFRC522.Read_UID()
-        logger.debug(f"{card_uid=}")	
-        
+        logger.debug(f"{card_uid=}")
+
         switch, button = Get_Buttons.read()
         
         clearence = look_up_clearance_level(card_uid, user_dict)
@@ -282,7 +282,14 @@ def main():
         if card_uid and is_valid and not switch:
             print(switch, button)
             logger.info(f"{switch=} {button=}")
-            strike_the_door()
+
+            hour_now = datetime.hour
+            if (clearence == level_1) and (hour_now > 10) and (hour_now < 22)
+                strike_the_door()
+            elif (clearence == level_1) and (hour_now < 10) and (hour_now > 22)
+                Pi_to_OLED.New_Message("You are outside of access hours")
+            else:
+                strike_the_door()
             send_log(("Opened door to "+card_uid+" at "+str(datetime.now())))
         
         elif card_uid and is_valid and (switch == True) and ((clearence == level_2) or (clearence == level_3) or (clearence == level_99)):
